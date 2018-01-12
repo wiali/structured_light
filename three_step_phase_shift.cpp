@@ -1,6 +1,9 @@
 #include "three_step_phase_shift.h"
 #include <cstdio>
 
+
+#define M_PI 3.14159265358979323846
+
 ThreeStepPhaseShift::ThreeStepPhaseShift(
           IplImage *imgPhase1
         , IplImage *imgPhase2
@@ -28,11 +31,11 @@ ThreeStepPhaseShift::ThreeStepPhaseShift(
     imgWrappedPhase = cvCreateImage(cvGetSize(imgPhase1),IPL_DEPTH_32F,1);
     imgUnwrappedPhase = cvCreateImage(cvGetSize(imgPhase1),IPL_DEPTH_32F,1);
 
-    mask            = new bool [size];
-    process         = new bool [size];
-    quality        = new float [size];
-    range           = new float [size];
-    depth           = new float [size];
+    mask      = new bool [size];
+    process   = new bool [size];
+    quality   = new float [size];
+    range     = new float [size];
+    depth     = new float [size];
 
         
     // initilize matrices

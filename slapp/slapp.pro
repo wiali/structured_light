@@ -4,13 +4,15 @@
 #
 #-------------------------------------------------
 
-QT       += core gui opengl
+QT  += core gui opengl
 
 TARGET = slapp
 TEMPLATE = app
 
-LIBS += -L/usr/lib -lcv -lcvaux -lcxcore -lm -lhighgui -lm -lstdc++  -lGL -lglut -lm -lGLU
-INCLUDEPATH += ../ /usr/include/opencv  /usr/include
+QMAKE_LIBDIR += $$PWD/Libraries/OpenCV/lib/ $$PWD/Libraries/GL_Files/lib/
+
+LIBS += -lopencv_world331 -lopengl32 -lGLU32 -lglut32
+INCLUDEPATH += $$PWD/Libraries/OpenCV/include $$PWD/Libraries/GL_Files/include
 
 SOURCES += main.cpp\
         slapp.cpp\

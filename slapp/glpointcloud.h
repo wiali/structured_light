@@ -1,19 +1,19 @@
+#ifndef GLPOINTCLOUD_H
+#define GLPOINTCLOUD_H
+
 #include <QGLWidget>
 #include <QMouseEvent>
 #include <QTimer>
 #include <QAbstractEventDispatcher>
 #include <QObject>
 #include <QWidget>
-#include <cv.h>
-#include <highgui.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
 #include <math.h>
-#include <cstdio> 
+#include <cstdio>
 
-
-#ifndef GLPOINTCLOUD_H 
-#define GLPOINTCLOUD_H 
-
-class GLPointCloud : public QGLWidget {    
+class GLPointCloud : public QGLWidget
+{
 
     Q_OBJECT
 

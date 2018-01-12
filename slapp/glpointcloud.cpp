@@ -1,4 +1,9 @@
+//#include <GL/gl.h>
+
 #include "glpointcloud.h"
+#include<gl/glu.h>
+
+#define M_PI 3.14159265358979323846
 
 void GLPointCloud::initializeGL() {
 
@@ -26,9 +31,22 @@ void GLPointCloud::resizeGL(int w, int h) {
 	glViewport(0, 0, w, h);
 
 	// Set the correct perspective.
-	gluPerspective(45.0f, ratio, 1.0f, 100.0f);
+    //gluPerspective(45.0f, ratio, 1.0f, 100.0f);
 
-	// Get Back to the Modelview
+    //auto fovy = 45.0f;
+    //auto aspect = ratio;
+    //auto zNear = 1.0f;
+    //auto zFar = 100.0f;
+
+    //GLdouble dbFov = fovy*M_PI / 180.0;
+    //GLdouble dbTan = tan(dbFov / 2);
+    //glFrustum(-zNear*dbTan*aspect,
+    //    zNear*dbTan*aspect,
+    //    -zNear*dbTan,
+    //    zNear*dbTan,
+    //    zNear, zFar);
+
+    // Get Back to the Modelview
 	glMatrixMode(GL_MODELVIEW);
 }
     
@@ -44,10 +62,11 @@ void GLPointCloud::paintGL() {
     glLoadIdentity();
 
     // set camara position
-    gluLookAt( 0.0,0.0,2.0,
-               0.0,0.0,0.0,
-               0.0,1.0,0.0);
+    //gluLookAt(0.0, 0.0, 2.0,
+    //    0.0, 0.0, 0.0,
+    //    0.0, 1.0, 0.0);
     
+
     // rotate
     glRotatef(180.f,0.f,0.f,1.f);
     glRotatef(anglex,0,1,0);

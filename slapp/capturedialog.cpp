@@ -1,15 +1,11 @@
 #include "capturedialog.h"
 #include "ui_capturedialog.h"
 #include <QCoreApplication>
+#include <QDebug>
 
 CaptureDialog::CaptureDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::CaptureDialog),
-    imgPhase1(0),
-    imgPhase2(0),
-    imgPhase3(0),
-    m_capture(0),
-    m_frame(0),
     m_state(Empty),
     m_width(640),
     m_height(480),
@@ -28,24 +24,42 @@ CaptureDialog::CaptureDialog(QWidget *parent) :
     connect(ui->grabButton, SIGNAL(clicked()), this, SLOT(grabImage()));
 
     // initialize capture
-    m_capture = cvCreateCameraCapture(0);
-    if(m_capture) {
-        // grab first frame to 
-        m_frame = cvQueryFrame(m_capture);
+    m_downCam.open(CV_CAP_DSHOW + 0);
+    if (!m_downCam.isOpened())
+    {
+        return;
     }
 
-    if(m_frame) {
-        int w = m_frame->width;
-        int h = m_frame->height;
+    auto resolution = QSize(1920, 1280);
+    m_downCam.set(CV_CAP_PROP_FRAME_WIDTH, resolution.width());
+    m_downCam.set(CV_CAP_PROP_FRAME_HEIGHT, resolution.height());
 
-        // aspect ratio heigh/width
-        m_aspect = h/(float)w;
-        m_width  = w <= m_width? w : m_width;
-        m_height = (int) m_width*m_aspect; 
+    m_downCam >> m_frame_downCam;
+    m_aspect = resolution.height() / (float)resolution.width();
+    m_width = resolution.width();
+    m_height = resolution.height();
 
-        updateLayout();
-        cout << "Update Layout" << endl;
-    }
+    updateLayout();
+    cout << "Update Layout" << endl;
+
+    //m_capture = cvCreateCameraCapture(0);
+    //if(m_capture) {
+    //    // grab first frame to 
+    //    m_frame = cvQueryFrame(m_capture);
+    //}
+
+    //if(m_frame) {
+    //    int w = m_frame->width;
+    //    int h = m_frame->height;
+
+    //    // aspect ratio heigh/width
+    //    m_aspect = h/(float)w;
+    //    m_width  = w <= m_width? w : m_width;
+    //    m_height = (int) m_width*m_aspect; 
+
+    //    updateLayout();
+    //    cout << "Update Layout" << endl;
+    //}
 
     // periodically update frame
     m_timer = new QTimer(this);
@@ -75,25 +89,32 @@ void CaptureDialog::updateLayout() {
 
 void CaptureDialog::refreshFrame() {
         
-    if(m_capture) {
+    //if(m_capture) {
+    //    // grab first frame to 
+    //    m_frame = cvQueryFrame(m_capture);
+    //}
+
+    //if(m_frame) {
+    //   QCoreApplication::processEvents();
+    //   setPixmap(ui->camImage,m_frame,m_width,m_height);
+    //   QCoreApplication::processEvents();
+    //}
+
+    if (m_downCam.isOpened()) {
         // grab first frame to 
-        m_frame = cvQueryFrame(m_capture);
+        m_downCam >> m_frame_downCam;
     }
 
-    if(m_frame) {
-       QCoreApplication::processEvents();
-       setPixmap(ui->camImage,m_frame,m_width,m_height);
-       QCoreApplication::processEvents();
+    if (!m_frame_downCam.empty()) 
+    {
+        QCoreApplication::processEvents();
+        setPixmap(ui->camImage, m_frame_downCam, m_width, m_height);
+        QCoreApplication::processEvents();
     }
 }
 
 
 void CaptureDialog::reset() {
-
-    // reset everything
-    if(imgPhase1) cvReleaseImage(&imgPhase1);
-    if(imgPhase2) cvReleaseImage(&imgPhase2);
-    if(imgPhase3) cvReleaseImage(&imgPhase3);
 
     ui->phase1Thumb->clear(); ui->phase1Thumb->setText("Phase 1");
     ui->phase2Thumb->clear(); ui->phase2Thumb->setText("Phase 2");
@@ -113,18 +134,18 @@ void CaptureDialog::grabImage() {
 
     switch(m_state) {
         case Empty:
-            imgPhase1 = copyFrame();
-            setPixmap(ui->phase1Thumb,imgPhase1,thumbWidth,thumbHeight);
+            imgPhase1 = m_frame_downCam.clone();
+            setPixmap(ui->phase1Thumb, m_frame_downCam,thumbWidth,thumbHeight);
             break;
 
         case Await1:
-            imgPhase2 = copyFrame();
-            setPixmap(ui->phase2Thumb,imgPhase2,thumbWidth,thumbHeight);
+            imgPhase2 = m_frame_downCam.clone();
+            setPixmap(ui->phase2Thumb, m_frame_downCam,thumbWidth,thumbHeight);
             break;
 
         case Await2:
-            imgPhase3 = copyFrame();
-            setPixmap(ui->phase3Thumb,imgPhase3,thumbWidth,thumbHeight);
+            imgPhase3 = m_frame_downCam.clone();
+            setPixmap(ui->phase3Thumb, m_frame_downCam,thumbWidth,thumbHeight);
             break;
     }
 
@@ -151,5 +172,48 @@ void CaptureDialog::updateState() {
 CaptureDialog::~CaptureDialog()
 {
     delete ui;
-    cvReleaseCapture(&m_capture);
+    m_downCam.release();
+}
+
+QImage CaptureDialog::cvMatToQImage(const cv::Mat& inMat)
+{
+    switch (inMat.type())
+    {
+        // 8-bit, 4 channel
+    case CV_8UC4:
+    {
+        QImage image(inMat.data,
+            inMat.cols, inMat.rows,
+            static_cast<int>(inMat.step),
+            QImage::Format_ARGB32);
+
+        return image;
+    }
+
+    // 8-bit, 3 channel
+    case CV_8UC3:
+    {
+        QImage image(inMat.data, inMat.cols, inMat.rows,
+            static_cast<int>(inMat.step), QImage::Format_RGB888);
+
+        return image.rgbSwapped();
+    }
+
+    // 8-bit, 1 channel
+    case CV_8UC1:
+    {
+        QImage image(inMat.data,
+            inMat.cols, inMat.rows,
+            static_cast<int>(inMat.step),
+            QImage::Format_Grayscale8);
+
+        return image;
+    }
+
+    default:
+        qWarning() << "ASM::cvMatToQImage() - cv::Mat image type not handled in switch:" << inMat.type();
+        break;
+    }
+
+    return QImage();
 }

@@ -7,8 +7,8 @@
 #include <QList>
 #include <QTimer>
 #include <QLabel>
-#include <cv.h>
-#include <highgui.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
 #include <math.h>
 #include <iostream>
 
@@ -29,13 +29,16 @@ public:
     explicit CaptureDialog(QWidget *parent = 0);
     ~CaptureDialog();
 
-    QList<IplImage *> *getImages() {
+    QList<IplImage*> *getImages() {
         int acc = exec();
         if(acc==Accepted) {
             QList<IplImage*> *images = new QList<IplImage*>();
-            *images << (imgPhase1);
-            *images << (imgPhase2);
-            *images << (imgPhase3);
+            IplImage imgTmp = imgPhase1;
+            *images << cvCloneImage(&imgTmp);
+            imgTmp = imgPhase2;
+            *images << cvCloneImage(&imgTmp);
+            imgTmp = imgPhase3;
+            *images << cvCloneImage(&imgTmp);
 
             return images;
         }
@@ -58,40 +61,18 @@ protected:
 
     enum State {Empty, Await1, Await2, Complete};
 
-    QImage * fromIplImage(IplImage *image) {
-        int w = image->width;
-        int h = image->height;
-        QImage *qimage = new QImage((uchar *)image->imageData,w,h,QImage::Format_RGB888);
-                    
-        return qimage;
+    QImage cvMatToQImage(const cv::Mat& inMat);
 
-    }
+    void setPixmap(QLabel *label, const cv::Mat& image, int w, int h) {
 
-    IplImage *copyFrame() {
-        if(m_frame) {
-            IplImage *current = cvCreateImage(cvGetSize(m_frame),m_frame->depth,m_frame->nChannels);
-            cvCopy(m_frame,current);
-            return current;
-        }
-       
-        return 0;
-    }
-
-    void setPixmap(QLabel *label, IplImage *image, int w, int h) {
-
-        QImage *qimage = fromIplImage(image);
+        QImage qimage = cvMatToQImage(image);
         QPixmap pixmap;
-        #if QT_VERSION < 0x040700
-        pixmap = QPixmap::fromImage(qimage->rgbSwapped());
-        #else
-        pixmap.convertFromImage(*qimage);
-        #endif
+        pixmap.convertFromImage(qimage);
        
         // set label
         label->setPixmap(pixmap.scaled(w,h));
         cout << "pixmap size " << w << "x" << h << endl;
         cout << "label size " << label->width() << "x" << label->height() << endl;
-        delete qimage;
     }
 
 
@@ -101,11 +82,9 @@ protected:
 private:
     Ui::CaptureDialog *ui;
 
-    IplImage *imgPhase1;
-    IplImage *imgPhase2;
-    IplImage *imgPhase3;
-    CvCapture *m_capture;
-    IplImage  *m_frame;
+    cv::Mat imgPhase1;
+    cv::Mat imgPhase2;
+    cv::Mat imgPhase3;
 
     State m_state;
 
@@ -114,6 +93,9 @@ private:
     float m_aspect;
 
     QTimer *m_timer;
+
+    cv::VideoCapture m_downCam;
+    cv::Mat m_frame_downCam;
 };
 
 #endif // CAPTUREDIALOG_H
