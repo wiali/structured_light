@@ -43,6 +43,11 @@ public:
     void phaseDecode();
     void phaseUnwrap();
     void computeDepth ();
+
+    void setRefPhase(IplImage* pRefPhase) 
+    {
+        m_pRefPhase = pRefPhase;
+    };
     
     void compute() {
         phaseDecode();
@@ -126,6 +131,8 @@ private:
 
     //deque<UnwrapPath> procQueue;
     priority_queue<UnwrapPath> processHeap;
+
+    IplImage* m_pRefPhase;
 };
 
 #endif

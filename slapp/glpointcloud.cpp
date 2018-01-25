@@ -94,7 +94,7 @@ void GLPointCloud::paintGL() {
 
             x = (float)j/twidth;
             y = (float)i/twidth;
-            z = zmatrix[i*twidth+j]/twidth;
+            z = zmatrix[i*twidth+j]/twidth * -20.0f;
 
             cb = (uchar)texturePtr[i*step+j*3];
             cg = (uchar)texturePtr[i*step+j*3+1];

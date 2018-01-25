@@ -6,9 +6,12 @@
 
 SLApp::SLApp(QWidget *parent, const char* img1, const char* img2, const char*img3) :
     QMainWindow(parent),
-    ui(new Ui::SLApp), decoder(0), m_timestamp(0)
+    ui(new Ui::SLApp), decoder(0), m_timestamp(0), decoder_ref(0)
 {
     ui->setupUi(this);
+
+    getReferencePhase();
+
     setupDecoder(img1,img2,img3);
 
     // connect slider
@@ -58,14 +61,44 @@ void SLApp::setupDecoder(const char* img1, const char* img2, const char*img3) {
     }
 
     // set up initual values TODO: less dirty
-    setThreshold(10);
-    setZscale(120);
-    setZskew(26);
+    //setThreshold(10);
+    //setZscale(120);
+    //setZskew(26);
 
-    ui->thresholdSlider->setValue(10);
-    ui->zscaleSlider->setValue(120);
-    ui->zskewSlider->setValue(26);
+    setThreshold(0.01);
+    setZscale(33);
+    setZskew(-44);
+
+    ui->thresholdSlider->setValue(0.01);
+    ui->zscaleSlider->setValue(33);
+    ui->zskewSlider->setValue(44);
     updateDecoder();
+}
+
+void SLApp::getReferencePhase()
+{
+    const char* img1 = "../pattern/fringe1.png";
+    const char* img2 = "../pattern/fringe2.png";
+    const char* img3 = "../pattern/fringe3.png";
+
+    if (!decoder_ref && img1 && img2 && img3) 
+    {
+        IplImage *phase1 = cvLoadImage(img1);
+        IplImage *phase2 = cvLoadImage(img2);
+        IplImage *phase3 = cvLoadImage(img3);
+
+        // setup phase decoder
+        decoder_ref = new ThreeStepPhaseShift(phase1, phase2, phase3);
+    }
+
+    if (decoder_ref)
+    {
+        float threshold = 0.01 * 1e-2f;
+        decoder_ref->setNoiseThreshold(threshold);
+
+        decoder_ref->phaseDecode();
+        decoder_ref->phaseUnwrap();
+    }
 }
 
 void SLApp::setThreshold(int value) {
@@ -87,8 +120,11 @@ void SLApp::setZskew(int value) {
 }
 
 void SLApp::updateDecoder() {
-    if(decoder)
+    if (decoder)
+    {
+        decoder->setRefPhase(decoder_ref->getUnwrappedPhase());
         decoder->compute();
+    }
     
     if(m_timestamp) {
         // save parameters

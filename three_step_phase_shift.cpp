@@ -12,8 +12,8 @@ ThreeStepPhaseShift::ThreeStepPhaseShift(
     imgPhase2(imgPhase2),
     imgPhase3(imgPhase3),
     mask(0),
-    process(0)
-
+    process(0),
+    m_pRefPhase(nullptr)
 {
 
     width = imgPhase1->width;
@@ -39,9 +39,13 @@ ThreeStepPhaseShift::ThreeStepPhaseShift(
 
         
     // initilize matrices
-    noiseThreshold = 0.1;
-    zscale = 130;
-    zskew = 24;
+    //noiseThreshold = 0.1;
+    //zscale = 130;
+    //zskew = 24;
+
+    noiseThreshold = 0.01;
+    zscale = 33;
+    zskew = -44;
 
     // init step width for color and single channel images
     step  = width; 
@@ -94,14 +98,14 @@ void ThreeStepPhaseShift::phaseDecode()
 
     cout << "step " << step<< endl;
 
-    for (int i = 0; i<height; i++) {
+    for (int i = 0; i<height;   i++) {
         for (int j = 0; j<width; j++) {
 
             ii = i*step+j;
             iic = i*stepc+j*3;
 
             // get intensity of each (rgb) phi image
-            phi1 =luminance(ptrPhase1+iic);         
+            phi1 =luminance(ptrPhase1   +iic);         
             phi2 =luminance(ptrPhase2+iic);         
             phi3 =luminance(ptrPhase3+iic);         
 
@@ -140,13 +144,20 @@ void ThreeStepPhaseShift::phaseDecode()
 
 void ThreeStepPhaseShift::computeDepth () {
     float* ptrUnwrappedPhase = (float *)imgUnwrappedPhase->imageData;
+    float* ptrUnwrappedPhase_ref = (float *)m_pRefPhase->imageData;
     
     for(int i = 0; i<height; i++) {
-        float planephase = 0.5 - (i - (height/2))/zskew;
+        //float planephase = 0.5 - (i - (height/2))/zskew;
         for(int j=0; j<width; j++) {
             int ii = i*step+j;
             if(!mask[ii]) {
-                depth[ii] = (ptrUnwrappedPhase[ii] - planephase) * zscale;
+                float planephase = ptrUnwrappedPhase_ref[ii];
+                //float ds = (ptrUnwrappedPhase[ii] - planephase) * zscale;
+                float deltaPhase = (ptrUnwrappedPhase[ii] - planephase);
+                float L = 50.0;
+                float d = 5.0;
+                float a_depth = (L * deltaPhase)/(d+ deltaPhase);
+                depth[ii] = a_depth;
             }
             else
                 depth[ii] = 0.f;
@@ -181,10 +192,6 @@ void ThreeStepPhaseShift::phaseUnwrap()
     int startX = width/2;
     int startY = height/2;
     
-    uchar* ptrPhase1 = (uchar *)imgPhase1->imageData;
-    uchar* ptrPhase2 = (uchar *)imgPhase2->imageData;
-    uchar* ptrPhase3 = (uchar *)imgPhase3->imageData;
-
     cvCopy(imgWrappedPhase, imgUnwrappedPhase);
     float* ptrUnwrappedPhase = (float *)imgUnwrappedPhase->imageData;
 

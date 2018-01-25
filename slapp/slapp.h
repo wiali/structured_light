@@ -36,8 +36,11 @@ private:
     void setupDecoder(const char* img1, const char* img2, const char*img3);
     void setupDecoder(QList<IplImage *> *images);
 
+    void getReferencePhase();
+
     Ui::SLApp *ui;
     ThreeStepPhaseShift *decoder;
+    ThreeStepPhaseShift *decoder_ref;
     QString *m_parameters;
     QString *m_timestamp;
 };
